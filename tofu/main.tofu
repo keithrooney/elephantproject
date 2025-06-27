@@ -5,7 +5,7 @@ resource "vultr_instance" "postgresql" {
   os_id       = "2284"
   enable_ipv6 = true
   ssh_key_ids = ["${vultr_ssh_key.root.id}"]
-  tags        = ["postgresql"]
+  tags        = ["elephantproject", "postgresql"]
 }
 
 resource "vultr_ssh_key" "root" {

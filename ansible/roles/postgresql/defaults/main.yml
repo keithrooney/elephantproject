@@ -1,4 +1,4 @@
 #SPDX-License-Identifier: MIT-0
 ---
-postgresql_python_virtual_environment: '/opt/venv/postgresql'
+postgresql_python_virtual_environment: '/opt/venv/elephantproject'
 postgresql_version: "16"
