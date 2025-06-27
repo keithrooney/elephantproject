@@ -10,6 +10,17 @@
     - node
 
 - hosts:
+    - etcd
+  remote_user: admin
+  become: yes
+  roles:
+    - etcd
+  vars:
+    ansible_ssh_private_key_file: "{{ node_root_private_key_path | default('~/.ssh/admin/id_ed25519') }}"
+  tags:
+    - etcd
+
+- hosts:
     - postgresql
   remote_user: admin
   become: yes

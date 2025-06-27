@@ -1,0 +1,97 @@
+---
+- name: create required group
+  ansible.builtin.group:
+    name: etcd
+    system: yes
+
+- name: create required user
+  ansible.builtin.user:
+    name: etcd
+    group: etcd
+    shell: /sbin/nologin
+    system: yes
+
+- name: create required directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    state: directory
+  with_items:
+    - path: /opt/etcd
+      owner: root
+      group: root
+    - path: /var/lib/etcd/
+      owner: etcd
+      group: etcd
+    - path: /etc/etcd/ssl
+      owner: root
+      group: root
+    - path: /etc/systemd/system
+      owner: root
+      group: root
+
+- name: download compressed binaries
+  ansible.builtin.get_url:
+    url: "https://storage.googleapis.com/etcd/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: "/opt/etcd/etcd-{{ etcd_version }}-linux-amd64.tar.gz"
+
+- name: uncompress binaries download
+  ansible.builtin.unarchive:
+    src: "/opt/etcd/etcd-{{ etcd_version }}-linux-amd64.tar.gz"
+    dest: /opt/etcd
+    remote_src: yes
+
+- name: install binaries
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: yes
+    mode: "0755"
+    force: yes
+  with_items:
+    - src: "/opt/etcd/etcd-{{ etcd_version }}-linux-amd64/etcd"
+      dest: /usr/local/bin
+    - src: "/opt/etcd/etcd-{{ etcd_version }}-linux-amd64/etcdctl"
+      dest: /usr/local/bin
+
+- name: distribute ssl files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    force: yes
+  with_items:
+    - src: "{{ etcd_ssl_directory }}/server.crt"
+      dest: /etc/etcd/ssl/server.crt
+    - src: "{{ etcd_ssl_directory }}/server.key"
+      dest: /etc/etcd/ssl/server.key
+
+- name: add system config(s)
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - src: etc/etcd/etcd.conf.yml.j2
+      dest: /etc/etcd/etcd.conf.yml
+    - src: etc/systemd/system/etcd.service.j2
+      dest: /etc/systemd/system/etcd.service
+
+- name: configure firewall port(s)
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.protocol }}"
+  with_items:
+    - rule: allow
+      port: 2380
+      protocol: tcp
+    - rule: allow
+      port: 2379
+      protocol: tcp
+
+- name: restart application
+  ansible.builtin.systemd:
+    name: etcd
+    state: restarted
+    daemon_reload: yes
