@@ -6,6 +6,7 @@ resource "vultr_instance" "postgresql" {
   enable_ipv6 = true
   ssh_key_ids = ["${vultr_ssh_key.root.id}"]
   tags        = ["elephantproject", "postgresql"]
+  label       = "postgresql[${count.index}]"
 }
 
 resource "vultr_ssh_key" "root" {
@@ -21,16 +22,7 @@ resource "vultr_instance" "etcd" {
   enable_ipv6 = true
   ssh_key_ids = ["${vultr_ssh_key.root.id}"]
   tags        = ["elephantproject", "etcd"]
-}
-
-output "inventory" {
-  value = templatefile(
-    "${path.module}/templates/inventory.ini.tmpl",
-    {
-      postgresql = vultr_instance.postgresql.*.main_ip,
-      etcd = vultr_instance.etcd.*.main_ip
-    }
-  )
+  label       = "etcd[${count.index}]"
 }
 
 output "openssl" {

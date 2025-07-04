@@ -1,0 +1,9 @@
+---
+plugin: vultr.cloud.vultr
+api_key: "{{ lookup('env', 'VULTR_API_KEY') }}"
+compose:
+  ansible_host: vultr_main_ip
+keyed_groups:
+  - key: vultr_tags | lower
+    prefix: ''
+    separator: ''
