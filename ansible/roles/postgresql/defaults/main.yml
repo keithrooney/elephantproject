@@ -2,3 +2,4 @@
 ---
 postgresql_python_virtual_environment: '/opt/venv/elephantproject'
 postgresql_version: "16"
+pgdg_signing_key_url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"

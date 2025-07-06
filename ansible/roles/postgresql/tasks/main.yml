@@ -1,60 +1,56 @@
 #SPDX-License-Identifier: MIT-0
 ---
-- name: install database package(s)
+- name: create required directories
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: add apt repository signing key
+  ansible.builtin.get_url:
+    url: "{{ pgdg_signing_key_url }}"
+    dest: /etc/apt/keyrings/pgdg.asc
+    mode: "0644"
+    force: true
+
+- name: add apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    filename: pgdg
+
+- name: prioritise apt repository internally
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/pgdg
+    src: etc/apt/preferences.d/pgdg
+    mode: "0644"
+    force: yes
+
+- name: refresh apt repository list(s)
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: install postgresql
   ansible.builtin.apt:
     name: "postgresql-{{ postgresql_version }}"
+    state: present
 
-- name: modify postgresql configuration
+- name: replace default postgresql configuration file
   ansible.builtin.copy:
     src: etc/postgresql/postgresql.conf
     dest: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
     mode: "0644"
   register: pg_config
 
-- name: modify postgresql host-based authentication
+- name: replace default postgresql host based authentication file
   ansible.builtin.copy:
     src: etc/postgresql/pg_hba.conf
     dest: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
     mode: "0644"
   register: pg_hba_config
 
-- name: restart database (only if configuration(s) were changed)
+- name: restart postgresql (only if configuration(s) were changed)
   ansible.builtin.systemd_service:
     name: postgresql
     state: restarted
   when: pg_config.changed or pg_hba_config.changed
-
-- name: create database user(s) on node
-  ansible.builtin.user:
-    name: dba
-    group: sudo
-    shell: /bin/bash
-
-- name: install supporting automation package(s)
-  ansible.builtin.pip:
-    name: psycopg2-binary
-    virtualenv: "{{ postgresql_python_virtual_environment }}"
-    virtualenv_command: "{{ ansible_python_interpreter }} -m venv"
-
-- block:
-
-  - name: create database user(s)
-    become_user: postgres
-    become: yes
-    community.postgresql.postgresql_user:
-      name: dba
-      password: "{{ postgresql_dba_password | mandatory }}"
-      role_attr_flags: SUPERUSER,CREATEROLE,CREATEDB,REPLICATION,BYPASSRLS
-
-  - name: reconfigure existing database superuser(s)
-    become_user: dba
-    become: yes
-    community.postgresql.postgresql_user:
-      login_user: dba
-      login_password: "{{ postgresql_dba_password | mandatory }}"
-      login_db: postgres
-      name: postgres
-      role_attr_flags: NOCREATEROLE,NOCREATEDB,NOREPLICATION,NOBYPASSRLS
-
-  vars:
-    ansible_python_interpreter: "{{ postgresql_python_virtual_environment }}/bin/python"
