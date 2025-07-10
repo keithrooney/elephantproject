@@ -25,11 +25,29 @@ resource "vultr_instance" "etcd" {
   label       = "etcd[${count.index}]"
 }
 
-output "openssl" {
-  value = templatefile(
+resource "local_file" "openssl_config" {
+  content  = templatefile(
     "${path.module}/templates/openssl.cnf.tmpl",
     {
       etcd = vultr_instance.etcd.*.main_ip
     }
   )
+  filename = pathexpand("~/.elephantproject/ssl/openssl.cnf")
+  file_permission = "0664"
+}
+
+resource "null_resource" "openssl_certificates" {
+  count = fileexists(pathexpand("~/.elephantproject/ssl/openssl.cnf")) ? 0 : 1
+  depends_on = [ local_file.openssl_config ]
+
+  provisioner "local-exec" {
+    when = create
+    command = "sh ${path.module}/scripts/ssl/generate.sh -c ${pathexpand("~/.elephantproject/ssl/openssl.cnf")}"
+  }
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "rm ${pathexpand("~/.elephantproject/ssl/openssl.cnf")}/server.*"
+  }
+
 }

@@ -21,7 +21,7 @@ initial-advertise-peer-urls: https://{{ ansible_host }}:2380
 advertise-client-urls: https://{{ ansible_host }}:2379
 
 # Initial cluster configuration for bootstrapping.
-initial-cluster: {% for host in groups['etcd']  %}etcd-{{ host }}=https://{{ host }}:2380{% if not loop.last %},{% endif %}{% endfor %}
+initial-cluster: {% for name in groups['etcd']  %}etcd-{{ hostvars[name]['ansible_host'] }}=https://{{ hostvars[name]['ansible_host'] }}:2380{% if not loop.last %},{% endif %}{% endfor %}
 
 # Initial cluster token for the etcd cluster during bootstrap.
 initial-cluster-token: 'etcd-cluster'
