@@ -1,5 +1,5 @@
 resource "vultr_instance" "postgresql" {
-  count       = 1
+  count       = 2
   plan        = "vc2-1c-1gb"
   region      = "fra"
   os_id       = "2284"
@@ -47,7 +47,7 @@ resource "null_resource" "openssl_certificates" {
 
   provisioner "local-exec" {
     when = destroy
-    command = "rm ${pathexpand("~/.elephantproject/ssl/openssl.cnf")}/server.*"
+    command = "sh ${path.module}/scripts/ssl/destroy.sh"
   }
 
 }
