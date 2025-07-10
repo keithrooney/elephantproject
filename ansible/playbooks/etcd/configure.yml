@@ -1,0 +1,7 @@
+---
+- hosts:
+    - etcd
+  remote_user: admin
+  become: yes
+  roles:
+    - etcd
