@@ -1,0 +1,61 @@
+#jinja2: trim_blocks:False
+scope: postgres
+namespace: /db/
+name: patroni-{{ ansible_host }}
+
+restapi:
+    listen: 0.0.0.0:8008 
+    connect_address: {{ ansible_host }}:8008
+
+etcd3:
+    hosts: {% for name in groups['etcd']  %}{{ hostvars[name]['ansible_host'] }}:2379{% if not loop.last %},{% endif %}{% endfor %}
+    cacert: /etc/etcd/ssl/server.crt
+    key: /etc/etcd/ssl/server.key
+    cert: /etc/etcd/ssl/server.crt
+    protocol: https
+
+bootstrap:
+    dcs:
+        ttl: 30
+        loop_wait: 10
+        retry_timeout: 10
+        maximum_lag_on_failover: 1048576
+        postgresql:
+            use_pg_rewind: true
+
+    initdb:
+    - encoding: UTF8
+
+postgresql:
+    listen: 0.0.0.0:5432
+    connect_address: {{ ansible_host }}:5432
+    data_dir: /var/lib/postgresql/{{ postgresql_version }}/main
+    bin_dir: /usr/lib/postgresql/{{ postgresql_version }}/bin
+    authentication:
+        superuser:
+            username: postgres
+            password: "{{ postgresql_superuser_password }}"
+        replication:
+            username: replicator
+            password: "{{ postgresql_replication_password }}"
+    pg_hba:
+    - local     all             postgres                                                peer
+    - host      all             postgres        127.0.0.1/32                            md5
+    - host      all             postgres        ::1/128                                 md5
+    {%- for name in groups['postgresql'] %}
+    - host      postgres     postgres  {{ hostvars[name]['ansible_host'] }}/32          md5
+    {%- endfor %}
+    - host      replication     replicator      127.0.0.1/32                            md5
+    - host      replication     replicator      ::1/128                                 md5
+    - host      all             replicator      0.0.0.0/0                               md5
+    {%- for name in groups['postgresql'] %}
+    - host      replication     replicator  {{ hostvars[name]['ansible_host'] }}/32     md5
+    {%- endfor %}
+    parameters:
+        unix_socket_directories: '/var/run/postgresql'
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false

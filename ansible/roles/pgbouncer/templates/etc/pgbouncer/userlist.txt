@@ -1,1 +1,2 @@
-"dba" "md5{{ postgresql_dba_password | md5 }}"
+"postgres" "md5{{ postgresql_superuser_password | md5 }}"
+"replicator" "md5{{ postgresql_replication_password | md5 }}"

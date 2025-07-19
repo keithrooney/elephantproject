@@ -1,0 +1,45 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: create required directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: postgres
+    group: postgres
+    state: directory
+  with_items:
+    - path: /etc/patroni
+    - path: /etc/etcd/ssl
+
+- name: distribute ssl files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    force: yes
+  with_items:
+    - src: "{{ patroni_ssl_directory }}/server.crt"
+      dest: /etc/etcd/ssl/server.crt
+    - src: "{{ patroni_ssl_directory }}/server.key"
+      dest: /etc/etcd/ssl/server.key
+
+- name: install supporting package(s)
+  ansible.builtin.pip:
+    name: "patroni[etcd3,psycopg3]"
+    virtualenv: "{{ patroni_virtual_environment }}"
+    virtualenv_command: "{{ ansible_facts.python.executable }} -m venv"
+
+- name: add configuration
+  ansible.builtin.template:
+    src: etc/patroni/patroni.yml.j2
+    dest: /etc/patroni/patroni.yml
+    mode: "0644"
+
+- name: add systemd service
+  ansible.builtin.copy:
+    src: etc/systemd/system/patroni.service
+    dest: /etc/systemd/system/patroni.service
+
+- name: restart patroni
+  ansible.builtin.systemd_service:
+    name: patroni
+    state: restarted

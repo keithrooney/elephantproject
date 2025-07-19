@@ -1,0 +1,5 @@
+#SPDX-License-Identifier: MIT-0
+---
+patroni_virtual_environment: /opt/venv/patroni
+patroni_ssl_directory: ~/.elephantproject/ssl
+patroni_logging_level: INFO

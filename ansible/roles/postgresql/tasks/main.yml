@@ -8,7 +8,7 @@
 
 - name: add apt repository signing key
   ansible.builtin.get_url:
-    url: "{{ pgdg_signing_key_url }}"
+    url: "{{ postgresql_apt_signing_key_url }}"
     dest: /etc/apt/keyrings/pgdg.asc
     mode: "0644"
     force: true
@@ -19,7 +19,7 @@
     state: present
     filename: pgdg
 
-- name: prioritise apt repository internally
+- name: prioritise apt repository
   ansible.builtin.copy:
     dest: /etc/apt/preferences.d/pgdg
     src: etc/apt/preferences.d/pgdg
@@ -35,22 +35,28 @@
     name: "postgresql-{{ postgresql_version }}"
     state: present
 
-- name: replace default postgresql configuration file
-  ansible.builtin.copy:
-    src: etc/postgresql/postgresql.conf
-    dest: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
-    mode: "0644"
-  register: pg_config
-
-- name: replace default postgresql host based authentication file
-  ansible.builtin.copy:
-    src: etc/postgresql/pg_hba.conf
-    dest: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
-    mode: "0644"
-  register: pg_hba_config
-
-- name: restart postgresql (only if configuration(s) were changed)
-  ansible.builtin.systemd_service:
+- name: disable postgresql
+  ansible.builtin.systemd:
     name: postgresql
-    state: restarted
-  when: pg_config.changed or pg_hba_config.changed
+    masked: yes
+    enabled: no
+    state: stopped
+
+- name: purge current data directory
+  ansible.builtin.file:
+    path: "/var/lib/postgresql/{{ postgresql_version }}/main"
+    state: absent
+
+- name: create new data directory
+  ansible.builtin.file:
+    path: "/var/lib/postgresql/{{ postgresql_version }}/main/"
+    owner: postgres
+    group: postgres
+    state: directory
+    mode: "0700"
+
+- name: configure default firewall port(s)
+  community.general.ufw:
+    rule: allow
+    port: 5432
+    proto: tcp

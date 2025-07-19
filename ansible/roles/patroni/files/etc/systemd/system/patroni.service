@@ -1,0 +1,15 @@
+[Unit]
+Description=Patroni
+After=network.target
+
+[Service]
+User=postgres
+Group=postgres
+Environment=PATRONI_CONFIG_FILE=/etc/patroni/patroni.yml
+ExecStart=/opt/venv/patroni/bin/python3 -m patroni /etc/patroni/patroni.yml
+KillMode=process
+Restart=on-failure
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target
