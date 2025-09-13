@@ -51,10 +51,15 @@
     - fail2ban
     - ufw
 
-- name: configure default firewall policy
+- name: deny all incoming traffic
   community.general.ufw:
-    state: enabled
-    policy: reject
+    default: deny
+    direction: incoming
+
+- name: allow all outgoing traffic
+  community.general.ufw:
+    default: allow
+    direction: outgoing
 
 - name: configure default firewall port(s)
   community.general.ufw:

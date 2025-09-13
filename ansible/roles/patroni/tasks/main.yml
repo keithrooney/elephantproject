@@ -39,6 +39,22 @@
     src: etc/systemd/system/patroni.service
     dest: /etc/systemd/system/patroni.service
 
+- name: allow (postgresql) peer traffic
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ hostvars[item]['ansible_host'] }}"
+    port: 5432
+  with_inventory_hostnames:
+    - postgresql
+
+- name: allow (patroni) peer traffic
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ hostvars[item]['ansible_host'] }}"
+    port: 8008
+  with_inventory_hostnames:
+    - postgresql
+
 - name: restart patroni
   ansible.builtin.systemd_service:
     name: patroni

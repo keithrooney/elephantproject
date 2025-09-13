@@ -24,7 +24,7 @@
     state: restarted
   when: app_config.changed or auth_config.changed
 
-- name: configure firewall port(s)
+- name: allow client traffic
   community.general.ufw:
     rule: allow
     port: 6432

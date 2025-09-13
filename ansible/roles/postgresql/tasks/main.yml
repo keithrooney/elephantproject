@@ -54,9 +54,3 @@
     group: postgres
     state: directory
     mode: "0700"
-
-- name: configure default firewall port(s)
-  community.general.ufw:
-    rule: allow
-    port: 5432
-    proto: tcp
