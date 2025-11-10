@@ -1,0 +1,21 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: create required directories
+  ansible.builtin.file:
+    path: /etc/pgbackrest
+    owner: postgres
+    group: postgres
+    state: directory
+
+- name: add configuration
+  ansible.builtin.template:
+    src: etc/pgbackrest/pgbackrest.conf.j2
+    dest: /etc/pgbackrest/pgbackrest.conf
+    owner: postgres
+    group: postgres
+    mode: "0644"
+
+- name: install pgbackrest
+  ansible.builtin.apt:
+    name: pgbackrest
+    state: present

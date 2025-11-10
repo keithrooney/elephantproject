@@ -53,6 +53,10 @@ postgresql:
     {%- endfor %}
     parameters:
         unix_socket_directories: '/var/run/postgresql'
+        archive_mode: on
+        archive_command: 'pgbackrest --stanza=main archive-push %p'
+        restore_command: 'pgbackrest --stanza=main restore'
+        archive_timeout: 60
 
 tags:
     nofailover: false
