@@ -1,35 +1,5 @@
 #SPDX-License-Identifier: MIT-0
 ---
-- name: create required directories
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
-
-- name: add apt repository signing key
-  ansible.builtin.get_url:
-    url: "{{ postgresql_apt_signing_key_url }}"
-    dest: /etc/apt/keyrings/pgdg.asc
-    mode: "0644"
-    force: true
-
-- name: add apt repository
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
-    state: present
-    filename: pgdg
-
-- name: prioritise apt repository
-  ansible.builtin.copy:
-    dest: /etc/apt/preferences.d/pgdg
-    src: etc/apt/preferences.d/pgdg
-    mode: "0644"
-    force: yes
-
-- name: refresh apt repository list(s)
-  ansible.builtin.apt:
-    update_cache: yes
-
 - name: install postgresql
   ansible.builtin.apt:
     name: "postgresql-{{ postgresql_version }}"
