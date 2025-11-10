@@ -19,3 +19,19 @@
   ansible.builtin.apt:
     name: pgbackrest
     state: present
+
+- name: upload script(s)
+  ansible.builtin.copy:
+    src: etc/pgbackrest/scripts
+    dest: /etc/pgbackrest
+    owner: postgres
+    group: postgres
+
+- name: create backup job(s)
+  become_user: postgres
+  ansible.builtin.cron:
+    name: perform backup 
+    weekday: "0"
+    hour: "0"
+    minute: "0"
+    job: "bash /etc/pgbackrest/scripts/backup.bash"
