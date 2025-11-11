@@ -27,11 +27,20 @@
     owner: postgres
     group: postgres
 
-- name: create backup job(s)
-  become_user: postgres
+- name: create full backup job
   ansible.builtin.cron:
-    name: perform backup 
+    name: execute full backup 
+    user: postgres
     weekday: "0"
     hour: "0"
     minute: "0"
-    job: "bash /etc/pgbackrest/scripts/backup.bash"
+    job: "bash /etc/pgbackrest/scripts/backup.bash -t full"
+
+- name: create diff backup job
+  ansible.builtin.cron:
+    name: execute diff backup 
+    user: postgres
+    weekday: "1-6"
+    hour: "0"
+    minute: "0"
+    job: "bash /etc/pgbackrest/scripts/backup.bash -t diff"
