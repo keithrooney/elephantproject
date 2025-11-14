@@ -1,8 +1,8 @@
 resource "vultr_instance" "postgresql" {
   count       = 2
-  plan        = "vc2-1c-1gb"
-  region      = "fra"
-  os_id       = "2284"
+  plan        = "${var.vultr_instance_plan}"
+  region      = "${var.vultr_region}"
+  os_id       = "${var.vultr_os_id}"
   enable_ipv6 = true
   ssh_key_ids = ["${vultr_ssh_key.root.id}"]
   tags        = ["elephantproject", "postgresql"]
@@ -16,9 +16,9 @@ resource "vultr_ssh_key" "root" {
 
 resource "vultr_instance" "etcd" {
   count       = 3
-  plan        = "vc2-1c-1gb"
-  region      = "fra"
-  os_id       = "2284"
+  plan        = "${var.vultr_instance_plan}"
+  region      = "${var.vultr_region}"
+  os_id       = "${var.vultr_os_id}"
   enable_ipv6 = true
   ssh_key_ids = ["${vultr_ssh_key.root.id}"]
   tags        = ["elephantproject", "etcd"]
@@ -37,7 +37,7 @@ resource "local_file" "openssl_config" {
 }
 
 resource "null_resource" "openssl_certificates" {
-  count = fileexists(pathexpand("~/.elephantproject/ssl/openssl.cnf")) ? 0 : 1
+
   depends_on = [ local_file.openssl_config ]
 
   provisioner "local-exec" {
