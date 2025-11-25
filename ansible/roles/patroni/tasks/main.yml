@@ -1,5 +1,25 @@
 #SPDX-License-Identifier: MIT-0
 ---
+- name: disable postgresql
+  ansible.builtin.systemd:
+    name: postgresql
+    masked: yes
+    enabled: no
+    state: stopped
+
+- name: purge current data directory
+  ansible.builtin.file:
+    path: "/var/lib/postgresql/{{ postgresql_version }}/main"
+    state: absent
+
+- name: create new data directory
+  ansible.builtin.file:
+    path: "/var/lib/postgresql/{{ postgresql_version }}/main/"
+    owner: postgres
+    group: postgres
+    state: directory
+    mode: "0700"
+
 - name: create required directories
   ansible.builtin.file:
     path: "{{ item.path }}"
@@ -39,15 +59,7 @@
     src: etc/systemd/system/patroni.service
     dest: /etc/systemd/system/patroni.service
 
-- name: allow (postgresql) peer traffic
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ hostvars[item]['ansible_host'] }}"
-    port: 5432
-  with_inventory_hostnames:
-    - postgresql
-
-- name: allow (patroni) peer traffic
+- name: allow peer traffic
   community.general.ufw:
     rule: allow
     from_ip: "{{ hostvars[item]['ansible_host'] }}"
