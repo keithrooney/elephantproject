@@ -8,7 +8,7 @@ function log {
 }
 
 FULL_BACKUP_KEYWORD="full"
-DIFF_BACKUP_KEYWORD="diff"
+INCREMENTAL_BACKUP_KEYWORD="incr"
 DEFAULT_BACKUP_TYPE=$FULL_BACKUP_KEYWORD
 type=$DEFAULT_BACKUP_TYPE
 while getopts ":t:h" opt;
@@ -16,14 +16,14 @@ do
     case $opt in
     t)
         type="$OPTARG"
-        if [[ $type != $DIFF_BACKUP_KEYWORD ]] && [[ $type != $FULL_BACKUP_KEYWORD ]];
+        if [[ $type != $INCREMENTAL_BACKUP_KEYWORD ]] && [[ $type != $FULL_BACKUP_KEYWORD ]];
         then
             echo "error: invalid argument: try '$ME -h' for more information"
             exit 1 
         fi
         ;;
     h)
-        echo "usage: $ME [-t full|diff]"
+        echo "usage: $ME [-t $FULL_BACKUP_KEYWORD|$INCREMENTAL_BACKUP_KEYWORD]"
         exit 0
         ;;
     *)
