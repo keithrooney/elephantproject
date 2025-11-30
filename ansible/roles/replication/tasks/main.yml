@@ -1,0 +1,83 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: install dependencies
+  ansible.builtin.apt:
+    name:
+      - libpq-dev
+      - python3-psycopg2
+
+- name: configure listening address
+  ansible.builtin.lineinfile: 
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf" 
+    regexp: "^#listen_addresses = 'localhost'.*$" 
+    line: "listen_addresses = '{{ ansible_host }}'"
+
+- name: register primary and secondary candidates
+  ansible.builtin.set_fact:
+    postgresql_replication_primary: "{{ groups['postgresql'][0] }}"
+    postgresql_replication_secondaries: "{{ groups['postgresql'][1:] }}"
+
+- when: inventory_hostname == postgresql_replication_primary
+  block:
+
+  - name: create replication user
+    become_user: postgres
+    become: yes
+    community.postgresql.postgresql_user:
+      login_db: postgres
+      name: replicator
+      password: "{{ postgresql_replication_password }}"
+      role_attr_flags: REPLICATION
+      expires: infinity
+
+  - name: update authentication file(s)
+    become_user: postgres
+    become: yes
+    ansible.builtin.lineinfile:
+      path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+      line: "host    replication     replicator      {{ hostvars[item].ansible_host }}/32       md5"
+      insertafter: EOF
+    with_items: "{{ postgresql_replication_secondaries }}"
+
+  - name: restart replication primary
+    ansible.builtin.systemd_service:
+      name: postgresql
+      state: restarted
+    # TODO when: replication user is modified or the authentication file is updated
+
+- when: inventory_hostname != postgresql_replication_primary
+  block:
+
+    - name: restart replication secondary
+      become_user: postgres
+      become: yes
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: stopped
+
+    - name: purge data directory
+      become_user: postgres
+      become: yes
+      ansible.builtin.file:
+        path: "/var/lib/postgresql/{{ postgresql_version }}/main/*"
+        state: absent
+
+    - name: distribute password
+      become_user: postgres
+      become: yes
+      ansible.builtin.copy:
+        dest: /var/lib/postgresql/.pgpass
+        content: "{{ hostvars[postgresql_replication_primary].ansible_host }}:5432:*:replicator:{{ postgresql_replication_password }}\n"
+        owner: postgres
+        group: postgres
+        mode: '0600'
+
+    - name: apply backup with replication
+      become_user: postgres
+      become: yes
+      command: "pg_basebackup -h {{ hostvars[postgresql_replication_primary].ansible_host }} -p 5432 -U replicator -D /var/lib/postgresql/{{ postgresql_version }}/main -Fp -Xs -R"
+
+    - name: restart replication secondary
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: started
