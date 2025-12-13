@@ -51,3 +51,12 @@ resource "null_resource" "openssl_certificates" {
   }
 
 }
+
+resource "vultr_block_storage" "postgresql_backup_storage" {
+  for_each = toset(vultr_instance.postgresql)
+  depends_on = [ vultr_instance.postgresql ]
+  size_gb = var.vultr_backup_storage_size
+  region = "${var.vultr_region}"
+  attached_to_instance = "${each.value.id}"
+  block_type = "high_perf"
+}

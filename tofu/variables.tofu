@@ -7,7 +7,7 @@ variable "vultr_region" {
 }
 
 variable "vultr_backup_storage_size" {
-  default = 500
+  default = 200
 }
 
 variable "vultr_os_id" {

@@ -1,13 +1,44 @@
 #SPDX-License-Identifier: MIT-0
 ---
-- name: create required directories
+- name: create data directory partition
+  community.general.parted:
+    device: /dev/vdb
+    part_end: "100%"
+    label: gpt
+    number: 1
+    fs_type: ext4
+    state: present
+
+- name: format data directory filesystem
+  community.general.filesystem:
+    fstype: ext4
+    dev: /dev/vdb1
+
+- name: create data directory
+  ansible.builtin.file:
+    path: "{{ pgbackrest_data_directory }}"
+    state: directory
+
+- name: register data directory block storage
+  ansible.builtin.shell: blkid -s UUID -o value /dev/vdb1
+  register: block_id
+
+- name: mount data directory
+  ansible.posix.mount:
+    path: "{{ pgbackrest_data_directory }}"
+    src: "UUID={{ block_id.stdout }}"
+    fstype: ext4
+    opts: defaults,noatime,nofail
+    state: mounted
+
+- name: create configuration directories
   ansible.builtin.file:
     path: /etc/pgbackrest
     owner: postgres
     group: postgres
     state: directory
 
-- name: add configuration
+- name: upload configuration files
   ansible.builtin.template:
     src: etc/pgbackrest/pgbackrest.conf.j2
     dest: /etc/pgbackrest/pgbackrest.conf
@@ -20,14 +51,14 @@
     name: pgbackrest
     state: present
 
-- name: upload script(s)
+- name: upload utility script(s)
   ansible.builtin.copy:
     src: etc/pgbackrest/scripts
     dest: /etc/pgbackrest
     owner: postgres
     group: postgres
 
-- name: create full backup job
+- name: configure full backup job
   ansible.builtin.cron:
     name: execute full backup 
     user: postgres
@@ -36,7 +67,7 @@
     minute: "0"
     job: "bash /etc/pgbackrest/scripts/backup.bash -t full"
 
-- name: create diff backup job
+- name: configure diff backup job
   ansible.builtin.cron:
     name: execute diff backup 
     user: postgres
