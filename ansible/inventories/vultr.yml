@@ -8,3 +8,5 @@ keyed_groups:
   - key: vultr_tags | lower
     prefix: ''
     separator: ''
+filters:
+  - '"elephantproject" in vultr_tags'
