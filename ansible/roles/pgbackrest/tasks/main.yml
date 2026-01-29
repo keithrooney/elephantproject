@@ -36,11 +36,11 @@
     minute: "0"
     job: "bash /etc/pgbackrest/scripts/backup.bash -t full"
 
-- name: create diff backup job
+- name: create incremental backup job
   ansible.builtin.cron:
-    name: execute diff backup 
+    name: execute incremental backup 
     user: postgres
     weekday: "1-6"
     hour: "0"
     minute: "0"
-    job: "bash /etc/pgbackrest/scripts/backup.bash -t diff"
+    job: "bash /etc/pgbackrest/scripts/backup.bash -t incr"
