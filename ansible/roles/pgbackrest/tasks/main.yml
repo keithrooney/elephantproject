@@ -1,13 +1,29 @@
 #SPDX-License-Identifier: MIT-0
 ---
-- name: create required directories
+- name: create data directory
+  ansible.builtin.file:
+    path: "{{ pgbackrest_data_directory }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0755"
+
+- name: mount data directory
+  ansible.posix.mount:
+    path: "{{ pgbackrest_data_directory }}"
+    src: "{{ pgbackrest_file_system_id }}"
+    fstype: virtiofs
+    opts: "defaults"
+    state: present
+
+- name: create configuration directories
   ansible.builtin.file:
     path: /etc/pgbackrest
     owner: postgres
     group: postgres
     state: directory
 
-- name: add configuration
+- name: upload configuration files
   ansible.builtin.template:
     src: etc/pgbackrest/pgbackrest.conf.j2
     dest: /etc/pgbackrest/pgbackrest.conf
@@ -20,27 +36,25 @@
     name: pgbackrest
     state: present
 
-- name: upload script(s)
+- name: upload utility script(s)
   ansible.builtin.copy:
     src: etc/pgbackrest/scripts
     dest: /etc/pgbackrest
     owner: postgres
     group: postgres
 
-- name: create full backup job
+- name: configure backup jobs
   ansible.builtin.cron:
-    name: execute full backup 
+    name: "{{ item.name }}"
     user: postgres
+    weekday: "{{ item.weekday }}"
+    hour: "0"
+    minute: "0"
+    job: "{{ item.job }}"
+  with_items:
+  - name: "execute full backup"
     weekday: "0"
-    hour: "0"
-    minute: "0"
     job: "bash /etc/pgbackrest/scripts/backup.bash -t full"
-
-- name: create incremental backup job
-  ansible.builtin.cron:
-    name: execute incremental backup 
-    user: postgres
+  - name: "execute incremental backup"
     weekday: "1-6"
-    hour: "0"
-    minute: "0"
     job: "bash /etc/pgbackrest/scripts/backup.bash -t incr"

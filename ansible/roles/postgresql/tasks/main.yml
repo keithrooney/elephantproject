@@ -5,6 +5,21 @@
     name: "postgresql-{{ postgresql_version }}"
     state: present
 
+- name: replace configuration file
+  ansible.builtin.copy:
+    src: etc/postgresql/main/postgresql.conf
+    dest: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+  register: postgresql_conf
+
+- name: restart postgresql
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: restarted
+  when: postgresql_conf.changed
+
 - name: allow traffic
   community.general.ufw:
     rule: allow

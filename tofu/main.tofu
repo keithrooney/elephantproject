@@ -51,3 +51,11 @@ resource "null_resource" "openssl_certificates" {
   }
 
 }
+
+resource "vultr_virtual_file_system_storage" "backup_storage" {
+  label = "backup-storage"
+  size_gb = "${var.vultr_file_system_storage_size}"
+  region = "${var.vultr_region}"
+  attached_instances = vultr_instance.postgresql[*].id
+  tags = ["elephantproject", "backups"]
+}
