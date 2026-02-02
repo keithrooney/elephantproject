@@ -13,8 +13,8 @@
     path: "{{ pgbackrest_data_directory }}"
     src: "{{ pgbackrest_file_system_id }}"
     fstype: virtiofs
-    opts: "defaults"
-    state: present
+    opts: rw,relatime
+    state: mounted
 
 - name: create configuration directories
   ansible.builtin.file:
