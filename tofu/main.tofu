@@ -15,7 +15,7 @@ resource "vultr_ssh_key" "root" {
 }
 
 resource "vultr_instance" "etcd" {
-  count       = 3
+  count       = var.postgresql_deployment_strategy == "patroni" ? 3: 0
   plan        = "${var.vultr_instance_plan}"
   region      = "${var.vultr_region}"
   os_id       = "${var.vultr_os_id}"
@@ -26,6 +26,7 @@ resource "vultr_instance" "etcd" {
 }
 
 resource "local_file" "openssl_config" {
+  count = var.postgresql_deployment_strategy == "patroni" ? 1: 0
   content  = templatefile(
     "${path.module}/templates/openssl.cnf.tmpl",
     {
@@ -37,6 +38,8 @@ resource "local_file" "openssl_config" {
 }
 
 resource "null_resource" "openssl_certificates" {
+
+  count = var.postgresql_deployment_strategy == "patroni" ? 1: 0
 
   depends_on = [ local_file.openssl_config ]
 
